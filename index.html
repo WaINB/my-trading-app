@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Deriv Trading Dashboard</title>
+    <style>
+        /* This section controls how your website looks */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: inline-block; }
+        #price { font-size: 2em; color: #e91e63; font-weight: bold; }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background-color: green; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Volatility 100 (1s) Index</h2>
+        <div id="connection-status"><span class="status-dot"></span> Connecting to Deriv...</div>
+        <hr>
+        <p>Current Price:</p>
+        <div id="price">0.00</div>
+    </div>
+
+    <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
+
+    <script>
+        // CONFIGURATION: Replace '1089' with your App ID from api.deriv.com
+        const APP_ID = 1089; 
+        
+        // 1. Establish connection
+        const connection = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+        const api = new DerivAPIBasic({ connection });
+
+        // 2. When connected, ask for live "Ticks" (price updates)
+        connection.onopen = function() {
+            document.getElementById('connection-status').innerHTML = '<span class="status-dot online"></span> Connected';
+            
+            // This tells Deriv: "Send me the price for Volatility 100 (1s) every time it changes"
+            api.subscribe({ ticks: '1HZ100V' }).subscribe(updatePrice);
+        };
+
+        // 3. This function runs every time a new price arrives
+        function updatePrice(data) {
+            if (data.tick) {
+                document.getElementById('price').innerText = data.tick.quote;
+            }
+        }
+    </script>
+</body>
+</html>
