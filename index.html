@@ -3,51 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Deriv Trading Dashboard</title>
+    <title>Trading Platform | Powered by Deriv</title>
     <style>
-        /* This section controls how your website looks */
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: inline-block; }
-        #price { font-size: 2em; color: #e91e63; font-weight: bold; }
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background-color: green; }
+        /* THE COLOR OVERHAUL */
+        :root {
+            --bg-color: #1e293b;      /* Deep Slate Blue */
+            --card-bg: #334155;      /* Lighter Slate */
+            --accent-gold: #fbbf24;   /* Gold for importance */
+            --text-main: #f8fafc;    /* Off-white */
+            --price-up: #4ade80;     /* Neon Green */
+            --price-down: #f87171;   /* Soft Red */
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .platform-box {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 320px;
+        }
+
+        .brand-text {
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        #price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 15px 0;
+            font-variant-numeric: tabular-nums; /* Prevents numbers from jumping */
+        }
+
+        .market-label {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .status-pill {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 5px 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50px;
+            font-size: 0.7rem;
+            color: var(--accent-gold);
+        }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Volatility 100 (1s) Index</h2>
-        <div id="connection-status"><span class="status-dot"></span> Connecting to Deriv...</div>
-        <hr>
-        <p>Current Price:</p>
+    <div class="platform-box">
+        <div class="brand-text">Live Market Data</div>
+        <div class="market-label">Volatility 100 (1s)</div>
         <div id="price">0.00</div>
+        <div id="status" class="status-pill">Connecting...</div>
     </div>
 
     <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
 
     <script>
-        // CONFIGURATION: Replace '1089' with your App ID from api.deriv.com
+        // Replace 1089 with your App ID if you have a custom one
         const APP_ID =  2D8lj8BSXA1fj1c; 
-        
-        // 1. Establish connection
         const connection = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
         const api = new DerivAPIBasic({ connection });
 
-        // 2. When connected, ask for live "Ticks" (price updates)
-        connection.onopen = function() {
-            document.getElementById('connection-status').innerHTML = '<span class="status-dot online"></span> Connected';
-            
-            // This tells Deriv: "Send me the price for Volatility 100 (1s) every time it changes"
-            api.subscribe({ ticks: '1HZ100V' }).subscribe(updatePrice);
+        let previousPrice = 0;
+
+        connection.onopen = () => {
+            document.getElementById('status').innerText = "SYSTEM LIVE";
+            // '1HZ100V' is the code for Volatility 100 (1s) Index
+            api.subscribe({ ticks: '1HZ100V' }).subscribe(updateUI);
         };
 
-        // 3. This function runs every time a new price arrives
-        function updatePrice(data) {
-            if (data.tick) {
-                document.getElementById('price').innerText = data.tick.quote;
+        function updateUI(data) {
+            if (data.error) {
+                console.error(data.error.message);
+                return;
             }
+
+            const currentPrice = data.tick.quote;
+            const priceDisplay = document.getElementById('price');
+
+            // Logic for Color Change
+            if (currentPrice > previousPrice) {
+                priceDisplay.style.color = "var(--price-up)";
+            } else if (currentPrice < previousPrice) {
+                priceDisplay.style.color = "var(--price-down)";
+            }
+
+            priceDisplay.innerText = currentPrice;
+            previousPrice = currentPrice;
         }
     </script>
 </body>
-
 </html>
